@@ -1,0 +1,54 @@
+{% extends "base_layout.html" %}
+
+{% block nav %}
+    <nav id="navbar" class="navbar is-dark">
+        <div class="navbar-brand">
+            <a href="/" class="navbar-item">{{ user }}</a>
+            <div
+                    id="navbarBurger"
+                    class="navbar-burger burger"
+                    data-target="burgerMenu"
+            >
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </div>
+        </div>
+        <div class="navbar-menu" id="burgerMenu">
+            <div class="navbar-end">
+                <a href="#" class="navbar-item">
+                    <strong>Logout</strong>
+                </a>
+            </div>
+        </div>
+    </nav>
+{% endblock nav %}
+
+{% block content %}
+
+    <h1>Permissions</h1>
+
+    <div>
+    Teams
+
+    <ol>
+    {% for team in teams %}
+        <li>
+            <a href="{% url 'permissions:team_detail' team.id %}">{{team}}</a>
+        </li>
+    {% endfor %}
+    </ol>
+    </div>
+
+    <form action="{% url 'permissions:create_team' %}" method="POST">
+        {% csrf_token %}
+        <input type="text" placeholder="Team name" name="team_name">
+        <select name="members" multiple>
+            {% for s_user in users %}
+                <option value="{{s_user}}">{{s_user}}</option>
+            {% endfor %}
+        </select>
+        <input type="submit" value="Add team" class="button">
+    </form>
+
+{% endblock content %}

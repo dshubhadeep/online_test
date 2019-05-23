@@ -1,0 +1,68 @@
+{% extends "base_layout.html" %}
+
+{% block nav %}
+    <nav id="navbar" class="navbar is-dark">
+        <div class="navbar-brand">
+            <a href="/" class="navbar-item">{{ user }}</a>
+            <div
+                    id="navbarBurger"
+                    class="navbar-burger burger"
+                    data-target="burgerMenu"
+            >
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </div>
+        </div>
+        <div class="navbar-menu" id="burgerMenu">
+            <div class="navbar-end">
+                <a href="#" class="navbar-item">
+                    <strong>Logout</strong>
+                </a>
+            </div>
+        </div>
+    </nav>
+{% endblock nav %}
+
+{% block content %}
+
+<div class="container">
+    <h1 class="title">{{team.name}}</h1>
+
+    <div>
+        <h3 class="is-subtitle">Members</h3>
+        <ol>
+            {% for member in team.members.all %}
+                <li>{{member}}</li>
+            {% endfor %}
+        </ol>
+   </div>
+
+   <div>
+        <h3 class="is-subtitle">Create role</h3>
+
+        <form action="{% url 'permissions:create_role' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="team_id" value={{team.id}}>
+            <input type="name" name="role_name" placeholder="Role name">
+            <select name="members" multiple>
+                {% for member in team.members.all %}
+                    <option value="{{member}}">{{member}}</option>
+                {% endfor %}
+            </select>
+            <input type="submit" value="Add role" class="button">
+        </form>
+   </div>
+
+   <div>
+   <h3 class="is-subtitle">Roles</h3>
+        <ol>
+            {% for role in roles %}
+                <li>{{role}}</li>
+            {% endfor %}
+        </ol>
+
+   </div>
+</div>
+
+{% endblock content %}
