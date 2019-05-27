@@ -3,7 +3,7 @@
 {% block nav %}
     <nav id="navbar" class="navbar is-dark">
         <div class="navbar-brand">
-            <a href="/" class="navbar-item">{{ user }}</a>
+            <a href="{% url 'permissions:home' %}" class="navbar-item">{{ user }}</a>
             <div
                     id="navbarBurger"
                     class="navbar-burger burger"
@@ -55,13 +55,45 @@
    </div>
 
    <div>
-   <h3 class="is-subtitle">Roles</h3>
+        <h3 class="is-subtitle">Roles</h3>
+
         <ol>
             {% for role in roles %}
                 <li>{{role}}</li>
             {% endfor %}
         </ol>
+   </div>
 
+   <div>
+        <h3 class="is-subtitle">Courses</h3>
+
+        <form action="{% url 'permissions:add_permission' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="team_id" value="{{team.id}}">
+            <select name="role">
+                {% for role in roles %}
+                    <option value="{{role.id}}">{{role}}</option>
+                {% endfor %}
+            </select>
+            <select name="courses">
+                {% for course in courses %}
+                    <option value="{{course.id}}">{{course}}</option>
+                {% endfor %}
+            </select>
+            <select name="perm_type">
+                <option value="read">Read</option>
+                <option value="write">Write</option>
+            </select>
+            <input type="submit" class="button" value="Add permission">
+        </form>
+   </div>
+
+   <div>
+       <h3>Permissions</h3>
+
+       {% for permission in permissions %}
+        <p>{{permission}}</p>
+       {% endfor %}
    </div>
 </div>
 

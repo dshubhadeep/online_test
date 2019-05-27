@@ -38,8 +38,10 @@ class Permission(models.Model):
     ]
 
     perm_type = models.CharField(max_length=20, choices=type_choices)
+    team = models.ForeignKey(
+        Team, on_delete=models.CASCADE, null=True, related_name="permission_team")
     content_type = models.ForeignKey(
         ContentType, on_delete=models.CASCADE, related_name="custom_permission", null=True)
     object_id = models.PositiveIntegerField(null=True)
     content_object = GenericForeignKey('content_type', 'object_id')
-    team = models.ManyToManyField(Role)
+    role = models.ManyToManyField(Role)

@@ -5,7 +5,7 @@ from django.views.decorators.http import require_POST
 
 from yaksh.models import Course
 
-from .models import Team, Role
+from .models import Team, Role, Permission
 
 # Create your views here.
 
@@ -54,22 +54,41 @@ def team_detail(request, id):
     print(id)
 
     users = User.objects.all()
-    # roles = Role.objects.filter(team=Team.objects.ge)
+    courses = Course.objects.filter()
 
     context = {
-        "users": users
+        "users": users,
+        "courses": courses
     }
 
     try:
         team = Team.objects.get(id=id)
         roles = Role.objects.filter(team=team)
+        permissions = Permission.objects.filter(team=team)
         context["team"] = team
         context["roles"] = roles
+        context["permissions"] = format_perm(permissions)
     except Team.DoesNotExist:
         print("Team doesn't exist")
         pass
 
     return render(request, "team_page.html", context)
+
+
+def format_perm(permissions):
+
+    strings = []
+    for permission in permissions:
+        roles = list(map(
+            lambda role: role.name,
+            permission.role.all()
+        ))
+
+        perm_str = "{}/{} can {} to {}".format(permission.team.name, ",".join(
+            roles), permission.perm_type, permission.content_object.name)
+        strings.append(perm_str)
+
+    return strings
 
 
 @require_POST
@@ -90,8 +109,41 @@ def create_role(request):
         )
 
         role.save()
+
+        for member in members:
+            role.members.add(User.objects.get(username=member))
+
+        role.save()
     except Team.DoesNotExist:
         print("Team doesn't exist")
         pass
+
+    return redirect('permissions:team_detail', team_id)
+
+
+@require_POST
+@login_required
+def add_permission(request):
+
+    team_id = request.POST.get("team_id")
+    course_id = request.POST.get("courses")
+    role_id = request.POST.get("role")
+    perm_type = request.POST.get("perm_type")
+
+    team = Team.objects.get(id=team_id)
+    course = Course.objects.get(id=course_id)
+    role = Role.objects.get(id=role_id)
+
+    permission = Permission(
+        team=team,
+        perm_type=perm_type,
+        content_object=course
+    )
+
+    permission.save()
+
+    permission.role.add(role)
+
+    permission.save()
 
     return redirect('permissions:team_detail', team_id)
