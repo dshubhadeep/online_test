@@ -23,15 +23,15 @@
     <h1>Permissions</h1>
 
     <div>
-    Teams
+        Teams
 
-    <ol>
-    {% for team in teams %}
-        <li>
-            <a href="{% url 'permissions:team_detail' team.id %}">{{team}}</a>
-        </li>
-    {% endfor %}
-    </ol>
+        <ol>
+        {% for team in teams %}
+            <li>
+                <a href="{% url 'permissions:team_detail' team.id %}">{{team}}</a>
+            </li>
+        {% endfor %}
+        </ol>
     </div>
 
     <form action="{% url 'permissions:create_team' %}" method="POST">
@@ -40,6 +40,11 @@
         <select name="members" multiple>
             {% for s_user in users %}
                 <option value="{{s_user}}">{{s_user}}</option>
+            {% endfor %}
+        </select>
+        <select name="courses" multiple>
+            {% for course in courses %}
+                <option value="{{course.id}}">{{course}}</option>
             {% endfor %}
         </select>
         <input type="submit" value="Add team" class="button">

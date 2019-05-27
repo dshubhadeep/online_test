@@ -20,6 +20,7 @@ class GroupMixin(models.Model):
 
 class Team(GroupMixin):
     members = models.ManyToManyField(User, related_name="team_members")
+    courses = models.ManyToManyField(Course)
 
     def __str__(self):
         return self.name

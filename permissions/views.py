@@ -15,11 +15,13 @@ def home(request):
 
     # Get users
     users = User.objects.all()
-    teams = Team.objects.all()
+    teams = request.user.team_members.all()
+    courses = Course.objects.filter(creator=request.user)
 
     context = {
         "users": users,
-        "teams": teams
+        "teams": teams,
+        "courses": courses
     }
 
     return render(request, "home.html", context)
@@ -31,6 +33,7 @@ def create_team(request):
 
     team_name = request.POST.get("team_name")
     members_list = request.POST.getlist("members")
+    courses_list = request.POST.getlist("courses")
 
     if len(team_name) > 0:
         team = Team.objects.create(
@@ -40,6 +43,9 @@ def create_team(request):
 
         for member in members_list:
             team.members.add(User.objects.get(username=member))
+
+        for course_id in courses_list:
+            team.courses.add(Course.objects.get(pk=course_id))
 
         # Add creator to members
         team.members.add(request.user)
@@ -54,11 +60,9 @@ def team_detail(request, id):
     print(id)
 
     users = User.objects.all()
-    courses = Course.objects.filter(creator=request.user)
 
     context = {
-        "users": users,
-        "courses": courses
+        "users": users
     }
 
     try:
@@ -68,6 +72,7 @@ def team_detail(request, id):
         context["team"] = team
         context["roles"] = roles
         context["permissions"] = format_perm(permissions)
+        context["courses"] = team.courses.all()
     except Team.DoesNotExist:
         print("Team doesn't exist")
         pass
