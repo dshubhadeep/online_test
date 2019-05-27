@@ -54,7 +54,7 @@ def team_detail(request, id):
     print(id)
 
     users = User.objects.all()
-    courses = Course.objects.filter()
+    courses = Course.objects.filter(creator=request.user)
 
     context = {
         "users": users,

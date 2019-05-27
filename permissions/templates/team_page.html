@@ -1,33 +1,28 @@
 {% extends "base_layout.html" %}
 
 {% block nav %}
-    <nav id="navbar" class="navbar is-dark">
-        <div class="navbar-brand">
-            <a href="{% url 'permissions:home' %}" class="navbar-item">{{ user }}</a>
-            <div
-                    id="navbarBurger"
-                    class="navbar-burger burger"
-                    data-target="burgerMenu"
-            >
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-            </div>
-        </div>
-        <div class="navbar-menu" id="burgerMenu">
-            <div class="navbar-end">
-                <a href="#" class="navbar-item">
-                    <strong>Logout</strong>
-                </a>
-            </div>
-        </div>
-    </nav>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark yaksh-nav">
+    <a class="navbar-brand" href="{% url 'permissions:home' %}">{{ user | title }}</a>
+
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="nav nav-pills ml-auto">
+            <li class="nav-item">
+                <a class="nav-link yaksh-navlink" href="#">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
 {% endblock nav %}
 
 {% block content %}
 
 <div class="container">
-    <h1 class="title">{{team.name}}</h1>
+    <h2 class="text-center">{{team.name}}</h2>
+    <hr>
 
     <div>
         <h3 class="is-subtitle">Members</h3>
