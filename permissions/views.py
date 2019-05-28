@@ -14,7 +14,7 @@ from .models import Team, Role, Permission
 def home(request):
 
     # Get users
-    users = User.objects.all()
+    users = User.objects.all().exclude(username=request.user.username)
     teams = request.user.team_members.all()
     courses = Course.objects.filter(creator=request.user)
 
@@ -73,9 +73,20 @@ def team_detail(request, id):
         context["roles"] = roles
         context["permissions"] = format_perm(permissions)
         context["courses"] = team.courses.all()
+
+        role_map = {}
+
+        for member in team.members.all():
+            member_roles = list(
+                map(lambda x: x.name, member.role_set.filter(team=team)))
+            role_map[member.username] = ",".join(member_roles)
+
+        print(role_map)
+        context["role_map"] = role_map
+
     except Team.DoesNotExist:
         print("Team doesn't exist")
-        pass
+        return redirect("permissions:home")
 
     return render(request, "team_page.html", context)
 

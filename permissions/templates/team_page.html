@@ -1,4 +1,6 @@
 {% extends "base_layout.html" %}
+{% load static %}
+
 
 {% block nav %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark yaksh-nav">
@@ -21,75 +23,133 @@
 {% block content %}
 
 <div class="container">
-    <h2 class="text-center">{{team.name}}</h2>
+
+    <h2 class="text-center">{{ team.name }}</h2>
     <hr>
 
-    <div>
-        <h3 class="is-subtitle">Members</h3>
-        <ol>
-            {% for member in team.members.all %}
-                <li>{{member}}</li>
-            {% endfor %}
-        </ol>
-   </div>
+    <div class="row">
 
-   <div>
-        <h3 class="is-subtitle">Create role</h3>
+        <div class="col-md-6">
+        
+            <ul class="nav nav-pills">
+                <li>
+                    <a href="#assign_role_form" class="nav-link active" data-toggle="tab">Assign role</a>
+                </li>
+                <li>
+                    <a href="#add_perm_form" class="nav-link" data-toggle="tab">Add permission</a>
+                </li>
+            </ul>
 
-        <form action="{% url 'permissions:create_role' %}" method="POST">
-            {% csrf_token %}
-            <input type="hidden" name="team_id" value={{team.id}}>
-            <input type="name" name="role_name" placeholder="Role name">
-            <select name="members" multiple>
-                {% for member in team.members.all %}
-                    <option value="{{member}}">{{member}}</option>
-                {% endfor %}
-            </select>
-            <input type="submit" value="Add role" class="button">
-        </form>
-   </div>
+            <div class="tab-content">
+            
+                <div id="assign_role_form" class="tab-pane active" style="margin-top:16px;">
 
-   <div>
-        <h3 class="is-subtitle">Roles</h3>
+                    <form action="{% url 'permissions:create_role' %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="team_id" value="{{ team.id }}">
+                        <div class="form-group">
+                            <label for="role_name">Role name</label>
+                            <input type="text" class="form-control" id="role_name" name="role_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="members">Members</label>
+                            <select name="members" id="members" class="form-control" multiple>
+                            {% for member in team.members.all %}
+                                <option value="{{ member }}">{{ member }}</option>
+                            {% endfor %}
+                            </select>
+                        </div>
 
-        <ol>
-            {% for role in roles %}
-                <li>{{role}}</li>
-            {% endfor %}
-        </ol>
-   </div>
+                        <div class="text-center">
+                            <input type="submit" value="Assign role" class="btn btn-primary">
+                        </div>
+                    </form>
 
-   <div>
-        <h3 class="is-subtitle">Courses</h3>
+                </div>
 
-        <form action="{% url 'permissions:add_permission' %}" method="POST">
-            {% csrf_token %}
-            <input type="hidden" name="team_id" value="{{team.id}}">
-            <select name="role">
-                {% for role in roles %}
-                    <option value="{{role.id}}">{{role}}</option>
-                {% endfor %}
-            </select>
-            <select name="courses">
-                {% for course in courses %}
-                    <option value="{{course.id}}">{{course}}</option>
-                {% endfor %}
-            </select>
-            <select name="perm_type">
-                <option value="read">Read</option>
-                <option value="write">Write</option>
-            </select>
-            <input type="submit" class="button" value="Add permission">
-        </form>
-   </div>
+                <div id="add_perm_form" class="tab-pane fade" style="margin-top:16px;">
 
-   <div>
-       <h3>Permissions</h3>
+                    <form action="{% url 'permissions:add_permission' %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="team_id" value="{{ team.id }}">
+                        <div class="form-group">
+                            <label for="role">Role</label>
+                            <select name="role" id="role" class="form-control">
+                                {% for role in roles %}
+                                    <option value="{{ role.id }}">{{ role }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="courses">Courses</label>
+                            <select name="courses" id="courses" class="form-control">
+                                {% for course in courses %}
+                                    <option value="{{ course.id }}">{{ course }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="perm_type">Permission Type</label>
+                            <select name="perm_type" id="perm_type" class="form-control">
+                                <option value="read">Read</option>
+                                <option value="write">Write</option>
+                            </select>
+                        </div>
 
-       {% for permission in permissions %}
-        <p>{{permission}}</p>
-       {% endfor %}
-   </div>
+                        <div class="text-center">
+                            <input type="submit" value="Add permission" class="btn btn-primary">
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-1"></div>
+    
+        <div class="col-md-5">
+        
+            <!-- MEMBERS -->
+            <table class="table">
+                <thead>
+                    <th>Sr. No</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                </thead>
+                <tbody>
+                    {% for member, roles in role_map.items %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ member | title }}
+                                {% if member == user.username %}
+                                    <span class="badge badge-primary">Creator</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                            {% if roles|length == 0 %}
+                                No role assigned
+                            {% else %}
+                                {{ roles }}
+                            {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+        
+        
+    </div>
+
 </div>
 
 {% endblock content %}
+
+{% block extra_scripts %}
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/popper.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+{% endblock extra_scripts %}

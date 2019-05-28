@@ -20,34 +20,78 @@
 
 {% block content %}
 
-    <h1>Permissions</h1>
+    <div class="container">
+        <h2 class="text-center">Permissions</h2>
+        <hr>
 
-    <div>
-        Teams
+        <div class="row">
+            <!-- TEAM ADD FORM -->
+            <div class="col-md-6">
+                <form action="{% url 'permissions:create_team' %}" method="POST">
+                    {% csrf_token %}
 
-        <ol>
-        {% for team in teams %}
-            <li>
-                <a href="{% url 'permissions:team_detail' team.id %}">{{team}}</a>
-            </li>
-        {% endfor %}
-        </ol>
+                    <div class="form-group">
+                        <label for="team_name">Team name</label>
+                        <input type="text" class="form-control" id="team_name" name="team_name" required>
+                    </div>
+
+                    <!-- TODO Better search -->
+                    <div class="form-group">
+                        <label for="members">Members</label>
+                        <select name="members" id="members" class="form-control" multiple>
+                        {% for s_user in users %}
+                            <option value="{{s_user}}">{{s_user}}</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="courses">Courses</label>
+                        <select name="courses" id="courses" class="form-control" multiple>
+                        {% for course in courses %}
+                            <option value="{{course.id}}">{{course}}</option>
+                        {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="text-center">
+                        <input type="submit" value="Add team" class="btn btn-primary">
+                    </div>    
+                </form>
+            </div>
+
+            <div class="col-md-2"></div>
+            <!-- TEAMS -->
+            <div class="col-md-4">
+                <div>
+                    <h4>My Teams</h4>
+
+                    <table class="table">
+                        <thead>
+                            <th>Sr. No</th>
+                            <th>Team name</th>
+                            <th>Created by</th>
+                        </thead>
+                        <tbody>
+                            {% for team in teams %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <a href="{% url 'permissions:team_detail' team.id %}">{{team}}</a>
+                                    </td>
+                                    <td>{{ team.created_by | title }}</td>
+                                </tr>
+                            {% endfor %}
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    
     </div>
 
-    <form action="{% url 'permissions:create_team' %}" method="POST">
-        {% csrf_token %}
-        <input type="text" placeholder="Team name" name="team_name">
-        <select name="members" multiple>
-            {% for s_user in users %}
-                <option value="{{s_user}}">{{s_user}}</option>
-            {% endfor %}
-        </select>
-        <select name="courses" multiple>
-            {% for course in courses %}
-                <option value="{{course.id}}">{{course}}</option>
-            {% endfor %}
-        </select>
-        <input type="submit" value="Add team" class="button">
-    </form>
+
 
 {% endblock content %}
