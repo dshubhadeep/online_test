@@ -75,6 +75,7 @@
                         <div class="form-group">
                             <label for="role">Role</label>
                             <select name="role" id="role" class="form-control">
+                                <option disabled selected>No role selected</option>
                                 {% for role in roles %}
                                     <option value="{{ role.id }}">{{ role }}</option>
                                 {% endfor %}
@@ -83,6 +84,7 @@
                         <div class="form-group">
                             <label for="courses">Courses</label>
                             <select name="courses" id="courses" class="form-control">
+                                <option disabled selected>No course selected</option>
                                 {% for course in courses %}
                                     <option value="{{ course.id }}">{{ course }}</option>
                                 {% endfor %}
@@ -95,7 +97,7 @@
                                 <option value="write">Write</option>
                             </select>
                         </div>
-
+                        
                         <div class="text-center">
                             <input type="submit" value="Add permission" class="btn btn-primary">
                         </div>
@@ -123,7 +125,7 @@
                         <tr>
                             <td>{{ forloop.counter }}</td>
                             <td>{{ member | title }}
-                                {% if member == user.username %}
+                                {% if member == team.created_by.username %}
                                     <span class="badge badge-primary">Creator</span>
                                 {% endif %}
                             </td>
@@ -152,4 +154,5 @@
     <script src="{% static 'js/jquery.min.js' %}"></script>
     <script src="{% static 'js/popper.min.js' %}"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'js/team.js' %}"></script>
 {% endblock extra_scripts %}

@@ -1,11 +1,12 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.shortcuts import redirect, render, get_object_or_404
 from django.views.decorators.http import require_POST
 
-from yaksh.models import Course
+from yaksh.models import Course, Quiz, Lesson
 
-from .models import Team, Role, Permission
+from .models import Permission, Role, Team
 
 # Create your views here.
 
@@ -71,7 +72,7 @@ def team_detail(request, id):
         permissions = Permission.objects.filter(team=team)
         context["team"] = team
         context["roles"] = roles
-        context["permissions"] = format_perm(permissions)
+        # context["permissions"] = format_perm(permissions)
         context["courses"] = team.courses.all()
 
         role_map = {}
@@ -145,21 +146,58 @@ def add_permission(request):
     course_id = request.POST.get("courses")
     role_id = request.POST.get("role")
     perm_type = request.POST.get("perm_type")
+    units = request.POST.getlist("units")
 
     team = Team.objects.get(id=team_id)
     course = Course.objects.get(id=course_id)
     role = Role.objects.get(id=role_id)
 
-    permission = Permission(
-        team=team,
-        perm_type=perm_type,
-        content_object=course
-    )
+    # Create permission obj for each unit
+    for unit in units:
+        type, id = unit.split("_")
 
-    permission.save()
+        if type == "quiz":
+            content_object = Quiz.objects.get(pk=id)
+        else:
+            content_object = Lesson.objects.get(pk=id)
 
-    permission.role.add(role)
+        permission = Permission(
+            team=team,
+            perm_type=perm_type,
+            content_object=content_object
+        )
 
-    permission.save()
+        permission.save()
+
+        permission.role.add(role)
+
+        permission.save()
 
     return redirect('permissions:team_detail', team_id)
+
+
+@login_required
+def get_modules(request):
+    ''' Get modules belonging to a course '''
+
+    course_id = request.GET.get("course_id")
+    course = get_object_or_404(Course, pk=course_id)
+    modules = course.learning_module.all()
+
+    units = []
+
+    for module in modules:
+        learning_units = list(module.learning_unit.all())
+        for learning_unit in learning_units:
+            if learning_unit.type == "quiz":
+                units.append({"key": "quiz_{}".format(learning_unit.quiz.id),
+                              "name": learning_unit.quiz.description})
+            else:
+                units.append({"key": "lesson_{}".format(learning_unit.lesson.id),
+                              "name": learning_unit.lesson.name})
+
+    data = {
+        "units": units
+    }
+
+    return JsonResponse(data)

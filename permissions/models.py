@@ -47,4 +47,5 @@ class Permission(models.Model):
         ContentType, on_delete=models.CASCADE, related_name="custom_permission", null=True)
     object_id = models.PositiveIntegerField(null=True)
     content_object = GenericForeignKey('content_type', 'object_id')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True)
     role = models.ManyToManyField(Role)
