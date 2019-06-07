@@ -3,124 +3,127 @@
 
 
 {% block nav %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark yaksh-nav">
-    <a class="navbar-brand" href="{% url 'permissions:home' %}">{{ user | title }}</a>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark yaksh-nav">
+        <a class="navbar-brand" href="{% url 'permissions:home' %}">{{ user | title }}</a>
 
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="nav nav-pills ml-auto">
-            <li class="nav-item">
-                <a class="nav-link yaksh-navlink" href="#">Logout</a>
-            </li>
-        </ul>
-    </div>
-</nav>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="nav nav-pills ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link yaksh-navlink" href="#">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
 {% endblock nav %}
 
 {% block content %}
 
-<div class="container">
+    <div class="container">
 
-    <h2 class="text-center">{{ team.name }}</h2>
-    <hr>
+        <h2 class="text-center">{{ team.name }}</h2>
+        <hr>
 
-    <div class="row">
+        <div class="row">
 
-        <div class="col-md-6">
-        
-            <ul class="nav nav-pills">
-                <li>
-                    <a href="#assign_role_form" class="nav-link active" data-toggle="tab">Assign role</a>
-                </li>
-                <li>
-                    <a href="#add_perm_form" class="nav-link" data-toggle="tab">Add permission</a>
-                </li>
-            </ul>
+            <div class="col-md-6">
 
-            <div class="tab-content">
-            
-                <div id="assign_role_form" class="tab-pane active" style="margin-top:16px;">
+                <ul class="nav nav-pills">
+                    <li>
+                        <a href="#assign_role_form" class="nav-link active" data-toggle="tab">Assign role</a>
+                    </li>
+                    <li>
+                        <a href="#add_perm_form" class="nav-link" data-toggle="tab">Add permission</a>
+                    </li>
+                </ul>
 
-                    <form action="{% url 'permissions:create_role' %}" method="POST">
-                        {% csrf_token %}
-                        <input type="hidden" name="team_id" value="{{ team.id }}">
-                        <div class="form-group">
-                            <label for="role_name">Role name</label>
-                            <input type="text" class="form-control" id="role_name" name="role_name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="members">Members</label>
-                            <select name="members" id="members" class="form-control" multiple>
-                            {% for member in team.members.all %}
-                                <option value="{{ member }}">{{ member }}</option>
-                            {% endfor %}
-                            </select>
-                        </div>
+                <div class="tab-content">
 
-                        <div class="text-center">
-                            <input type="submit" value="Assign role" class="btn btn-primary">
-                        </div>
-                    </form>
+                    <div id="assign_role_form" class="tab-pane active" style="margin-top:16px;">
 
-                </div>
+                        <form action="{% url 'permissions:create_role' %}" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="team_id" value="{{ team.id }}">
+                            <div class="form-group">
+                                <label for="role_name">Role name</label>
+                                <input type="text" class="form-control" id="role_name" name="role_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="members">Members</label>
+                                <select name="members" id="members" class="form-control" multiple>
+                                    {% for member in team.members.all %}
+                                        <option value="{{ member }}">{{ member }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
 
-                <div id="add_perm_form" class="tab-pane fade" style="margin-top:16px;">
+                            <div class="text-center">
+                                <input type="submit" value="Assign role" class="btn btn-primary">
+                            </div>
+                        </form>
 
-                    <form action="{% url 'permissions:add_permission' %}" method="POST">
-                        {% csrf_token %}
-                        <input type="hidden" name="team_id" value="{{ team.id }}">
-                        <div class="form-group">
-                            <label for="role">Role</label>
-                            <select name="role" id="role" class="form-control">
-                                <option disabled selected>No role selected</option>
-                                {% for role in roles %}
-                                    <option value="{{ role.id }}">{{ role }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="courses">Courses</label>
-                            <select name="courses" id="courses" class="form-control">
-                                <option disabled selected>No course selected</option>
-                                {% for course in courses %}
-                                    <option value="{{ course.id }}">{{ course }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="perm_type">Permission Type</label>
-                            <select name="perm_type" id="perm_type" class="form-control">
-                                <option value="read">Read</option>
-                                <option value="write">Write</option>
-                            </select>
-                        </div>
-                        
-                        <div class="text-center">
-                            <input type="submit" value="Add permission" class="btn btn-primary">
-                        </div>
-                    </form>
+                    </div>
+
+                    <div id="add_perm_form" class="tab-pane fade" style="margin-top:16px;">
+
+                        <form action="{% url 'permissions:add_permission' %}" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="team_id" value="{{ team.id }}">
+                            <div class="form-group">
+                                <label for="role">Role</label>
+                                <select name="role" id="role" class="form-control">
+                                    <option disabled selected>No role selected</option>
+                                    {% for role in roles %}
+                                        <option value="{{ role.id }}">{{ role }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="courses">Courses</label>
+                                <select name="courses" id="courses" class="form-control">
+                                    <option disabled selected>No course selected</option>
+                                    {% for course in courses %}
+                                        <option value="{{ course.id }}">{{ course }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="perm_type">Permission Type</label>
+                                <select name="perm_type" id="perm_type" class="form-control">
+                                    <option value="read">Read</option>
+                                    <option value="write">Write</option>
+                                </select>
+                            </div>
+
+                            <div class="text-center">
+                                <input type="submit" value="Add permission" class="btn btn-primary">
+                            </div>
+                        </form>
+
+                    </div>
 
                 </div>
 
             </div>
 
-        </div>
+            <div class="col-md-1"></div>
 
-        <div class="col-md-1"></div>
-    
-        <div class="col-md-5">
-        
-            <!-- MEMBERS -->
-            <table class="table">
-                <thead>
-                    <th>Sr. No</th>
-                    <th>Name</th>
-                    <th>Role</th>
-                </thead>
-                <tbody>
+            <div class="col-md-5">
+
+                <!-- MEMBERS -->
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Sr. No</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                     {% for member, roles in role_map.items %}
                         <tr>
                             <td>{{ forloop.counter }}</td>
@@ -130,23 +133,32 @@
                                 {% endif %}
                             </td>
                             <td>
-                            {% if roles|length == 0 %}
-                                No role assigned
-                            {% else %}
-                                {{ roles }}
-                            {% endif %}
+                                {% if roles|length == 0 %}
+                                    No role assigned
+                                {% else %}
+                                    {{ roles }}
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+
+                <h3>Permissions</h3>
+
+                <ul>
+                    {% for permission in permissions %}
+                        <li>{{ permission }}</li>
+                    {% endfor %}
+                </ul>
+
+
+            </div>
+
 
         </div>
-        
-        
-    </div>
 
-</div>
+    </div>
 
 {% endblock content %}
 

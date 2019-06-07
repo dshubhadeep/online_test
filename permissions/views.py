@@ -57,8 +57,7 @@ def create_team(request):
 
 
 @login_required()
-def team_detail(request, id):
-    print(id)
+def team_detail(request, team_id):
 
     users = User.objects.all()
 
@@ -67,12 +66,12 @@ def team_detail(request, id):
     }
 
     try:
-        team = Team.objects.get(id=id)
+        team = Team.objects.get(id=team_id)
         roles = Role.objects.filter(team=team)
         permissions = Permission.objects.filter(team=team)
         context["team"] = team
         context["roles"] = roles
-        # context["permissions"] = format_perm(permissions)
+        context["permissions"] = format_perm(permissions)
         context["courses"] = team.courses.all()
 
         role_map = {}
@@ -82,7 +81,6 @@ def team_detail(request, id):
                 map(lambda x: x.name, member.role_set.filter(team=team)))
             role_map[member.username] = ",".join(member_roles)
 
-        print(role_map)
         context["role_map"] = role_map
 
     except Team.DoesNotExist:
@@ -101,8 +99,9 @@ def format_perm(permissions):
             permission.role.all()
         ))
 
-        perm_str = "{}/{} can {} to {}".format(permission.team.name, ",".join(
-            roles), permission.perm_type, permission.content_object.name)
+        perm_str = "{} can {} to {}/{}".format(",".join(
+            roles), permission.perm_type,
+            permission.course, permission.content_object)
         strings.append(perm_str)
 
     return strings
@@ -163,6 +162,7 @@ def add_permission(request):
 
         permission = Permission(
             team=team,
+            course=course,
             perm_type=perm_type,
             content_object=content_object
         )
@@ -187,7 +187,7 @@ def get_modules(request):
     units = []
 
     for module in modules:
-        learning_units = list(module.learning_unit.all())
+        learning_units = module.learning_unit.all()
         for learning_unit in learning_units:
             if learning_unit.type == "quiz":
                 units.append({"key": "quiz_{}".format(learning_unit.quiz.id),

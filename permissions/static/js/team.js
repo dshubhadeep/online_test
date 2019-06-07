@@ -31,9 +31,11 @@ function addModuleOptions({ units }) {
     </div>
     `;
 
-  if ($("#unit-group").length != 0) {
+  const unitGroup = $("#unit-group");
+
+  if (unitGroup.length !== 0) {
     // elem. already exists
-    $("#unit-group").remove();
+    unitGroup.remove();
   }
 
   courseFormGroup.after(html);
