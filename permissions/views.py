@@ -7,13 +7,14 @@ from django.views.decorators.http import require_POST
 from yaksh.models import Course, Quiz, Lesson
 
 from .models import Permission, Role, Team
+from .utils import format_perm
+
 
 # Create your views here.
 
 
 @login_required
 def home(request):
-
     # Get users
     users = User.objects.all().exclude(username=request.user.username)
     teams = request.user.team_members.all()
@@ -31,7 +32,6 @@ def home(request):
 @require_POST
 @login_required
 def create_team(request):
-
     team_name = request.POST.get("team_name")
     members_list = request.POST.getlist("members")
     courses_list = request.POST.getlist("courses")
@@ -58,6 +58,8 @@ def create_team(request):
 
 @login_required()
 def team_detail(request, team_id):
+    print("REQUEST PATH", request.path)
+    print("REQUEST INFO", request.path_info)
 
     users = User.objects.all()
 
@@ -90,27 +92,9 @@ def team_detail(request, team_id):
     return render(request, "team_page.html", context)
 
 
-def format_perm(permissions):
-
-    strings = []
-    for permission in permissions:
-        roles = list(map(
-            lambda role: role.name,
-            permission.role.all()
-        ))
-
-        perm_str = "{} can {} to {}/{}".format(",".join(
-            roles), permission.perm_type,
-            permission.course, permission.content_object)
-        strings.append(perm_str)
-
-    return strings
-
-
 @require_POST
 @login_required
 def create_role(request):
-
     team_id = request.POST.get("team_id")
     role_name = request.POST.get("role_name")
     members = request.POST.getlist("members")
@@ -140,7 +124,6 @@ def create_role(request):
 @require_POST
 @login_required
 def add_permission(request):
-
     team_id = request.POST.get("team_id")
     course_id = request.POST.get("courses")
     role_id = request.POST.get("role")
@@ -174,6 +157,25 @@ def add_permission(request):
         permission.save()
 
     return redirect('permissions:team_detail', team_id)
+
+
+def delete_permission(request, permission_id, team_id):
+    ''' 
+    Delete permission. 
+    Only team creator can delete
+    '''
+
+    try:
+        team = Team.objects.get(pk=team_id)
+
+        if team.created_by == request.user:
+            Permission.objects.get(pk=permission_id).delete()
+
+            return redirect('permissions:team_detail', team_id)
+
+    except Team.DoesNotExist:
+        print("Team doesn't exist")
+        pass
 
 
 @login_required

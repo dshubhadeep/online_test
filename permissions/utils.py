@@ -1,7 +1,3 @@
-from yaksh.models import Course, Quiz, Lesson;
-from django.contrib.auth.models import User
-
-
 def check_permission(course, unit, user):
     ''' Check if user has permissions for a given unit '''
 
@@ -9,7 +5,7 @@ def check_permission(course, unit, user):
     user_team_count = user.team_members.filter(name__in=teams).count()
 
     if user_team_count:
-        
+
         # Find user's role in team
         role = user.role_set.filter(team__in=teams)
 
@@ -24,6 +20,24 @@ def check_permission(course, unit, user):
 
             if len(object_perms):
                 return object_perms[0]
-        
+
     return None
 
+
+def format_perm(permissions):
+    perms = []
+    for permission in permissions:
+        roles = list(map(
+            lambda role: role.name,
+            permission.role.all()
+        ))
+
+        perms.append({
+            "id": permission.id,
+            "role": ",".join(roles),
+            "type": permission.perm_type,
+            "course": permission.course.name,
+            "unit": permission.content_object
+        })
+
+    return perms
