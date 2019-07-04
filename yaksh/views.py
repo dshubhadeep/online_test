@@ -48,6 +48,8 @@ from .send_emails import (send_user_mail,
                           generate_activation_key, send_bulk_mail)
 from .decorators import email_verified, has_profile
 
+from permissions.utils import check_permission
+
 
 def my_redirect(url):
     """An overridden redirect to deal with URL_ROOT-ing. See settings.py
@@ -171,7 +173,7 @@ def quizlist_user(request, enrolled=None, msg=None):
         courses = Course.objects.filter(
             active=True, is_trial=False
         ).exclude(
-           ~Q(requests=user), ~Q(rejected=user), hidden=True
+            ~Q(requests=user), ~Q(rejected=user), hidden=True
         ).order_by('-id')
         title = 'All Courses'
 
@@ -247,7 +249,7 @@ def add_question(request, question_id=None):
                                             fields='__all__')
             formsets.append(formset(
                 request.POST, request.FILES, instance=question
-                )
+            )
             )
         files = request.FILES.getlist('file_field')
         uploaded_files = FileUpload.objects.filter(question_id=question.id)
@@ -304,31 +306,48 @@ def add_question(request, question_id=None):
 def add_quiz(request, quiz_id=None, course_id=None):
     """To add a new quiz in the database.
     Create a new quiz and store it."""
+
     user = request.user
-    if not is_moderator(user):
-        raise Http404('You are not allowed to view this course !')
+    context = {}
+    permission = None
+    # if not is_moderator(user):
+    #     raise Http404('You are not allowed to view this course !')
     if quiz_id:
         quiz = get_object_or_404(Quiz, pk=quiz_id)
-        if quiz.creator != user and not course_id:
-            raise Http404('This quiz does not belong to you')
+        # if quiz.creator != user and not course_id:
+        #     raise Http404('This quiz does not belong to you')
     else:
         quiz = None
     if course_id:
         course = get_object_or_404(Course, pk=course_id)
-        if not course.is_creator(user) and not course.is_teacher(user):
-            raise Http404('This quiz does not belong to you')
+        # if not course.is_creator(user) and not course.is_teacher(user):
+        #     raise Http404('This quiz does not belong to you')
 
-    context = {}
-    if request.method == "POST":
-        form = QuizForm(request.POST, instance=quiz)
-        if form.is_valid():
-            if quiz is None:
-                form.instance.creator = user
-            form.save()
-            if not course_id:
-                return my_redirect("/exam/manage/courses/all_quizzes/")
+        # Get team which are related to course
+        if quiz.creator != user:
+
+            permission = check_permission(course, quiz, user)
+
+            if permission:
+                context["perm_type"] = permission.perm_type
             else:
-                return my_redirect("/exam/manage/courses/")
+                raise Http404("Insufficient permissions")
+
+    if request.method == "POST":
+
+        if quiz is None or (
+                quiz.creator == user or permission.perm_type == "write"):
+            form = QuizForm(request.POST, instance=quiz)
+            if form.is_valid():
+                if quiz is None:
+                    form.instance.creator = user
+                form.save()
+                if not course_id:
+                    return my_redirect("/exam/manage/courses/all_quizzes/")
+                else:
+                    return my_redirect("/exam/manage/courses/")
+        else:
+            raise Http404("You don't have write access")
 
     else:
         form = QuizForm(instance=quiz)
@@ -1315,7 +1334,7 @@ def _remove_already_present(questionpaper_id, questions):
 def _get_questions_from_tags(question_tags, user):
     search_tags = []
     for tags in question_tags:
-        search_tags.extend(re.split('[; |, |\*|\n]', tags))
+        search_tags.extend(re.split(r'[; |, |\*|\n]', tags))
     return Question.objects.filter(tags__name__in=search_tags,
                                    user=user).distinct()
 
@@ -1582,7 +1601,7 @@ def download_quiz_csv(request, course_id, quiz_id):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = \
         'attachment; filename="{0}-{1}-attempt{2}.csv"'.format(
-            course.name.replace('.', ''),  quiz.description.replace('.', ''),
+            course.name.replace('.', ''), quiz.description.replace('.', ''),
             attempt_number)
     writer = csv.writer(response)
     if 'questions' in csv_fields:
@@ -1590,19 +1609,19 @@ def download_quiz_csv(request, course_id, quiz_id):
     writer.writerow(csv_fields)
 
     csv_fields_values = {
-            'name': 'user.get_full_name().title()',
-            'roll_number': 'user.profile.roll_number',
-            'institute': 'user.profile.institute',
-            'department': 'user.profile.department',
-            'username': 'user.username',
-            'marks_obtained': 'answerpaper.marks_obtained',
-            'out_of': 'question_paper.total_marks',
-            'percentage': 'answerpaper.percent',
-            'status': 'answerpaper.status'}
+        'name': 'user.get_full_name().title()',
+        'roll_number': 'user.profile.roll_number',
+        'institute': 'user.profile.institute',
+        'department': 'user.profile.department',
+        'username': 'user.username',
+        'marks_obtained': 'answerpaper.marks_obtained',
+        'out_of': 'question_paper.total_marks',
+        'percentage': 'answerpaper.percent',
+        'status': 'answerpaper.status'}
     questions_scores = {}
     for question in questions:
         questions_scores['{0}-{1}'.format(question.summary, question.points)] \
-                = 'answerpaper.get_per_question_score({0})'.format(question.id)
+            = 'answerpaper.get_per_question_score({0})'.format(question.id)
     csv_fields_values.update(questions_scores)
 
     users = users.exclude(id=course.creator.id).exclude(
@@ -1650,8 +1669,8 @@ def grade_user(request, quiz_id=None, user_id=None, attempt_number=None,
             raise Http404('This course does not belong to you')
 
         has_quiz_assignments = AssignmentUpload.objects.filter(
-                                question_paper_id=questionpaper_id
-                                ).exists()
+            question_paper_id=questionpaper_id
+        ).exists()
         context = {
             "users": user_details,
             "quiz_id": quiz_id,
@@ -1669,9 +1688,9 @@ def grade_user(request, quiz_id=None, user_id=None, attempt_number=None,
             except IndexError:
                 raise Http404('No attempts for paper')
             has_user_assignments = AssignmentUpload.objects.filter(
-                                question_paper_id=questionpaper_id,
-                                user_id=user_id
-                                ).exists()
+                question_paper_id=questionpaper_id,
+                user_id=user_id
+            ).exists()
             user = User.objects.get(id=user_id)
             data = AnswerPaper.objects.get_user_data(
                 user, questionpaper_id, course_id, attempt_number
@@ -2077,7 +2096,7 @@ def new_activation(request, email=None):
         user = User.objects.get(email=email)
     except MultipleObjectsReturned:
         context['email_err_msg'] = "Multiple entries found for this email"\
-                                    "Please change your email"
+            "Please change your email"
         return my_render_to_response(
             request, 'yaksh/activation_status.html', context
         )
@@ -2087,7 +2106,7 @@ def new_activation(request, email=None):
                             Please verify your account"
         return my_render_to_response(
             request, 'yaksh/activation_status.html', context
-            )
+        )
 
     if not user.profile.is_email_verified:
         user.profile.activation_key = generate_activation_key(user.username)
@@ -2147,8 +2166,8 @@ def download_assignment_file(request, quiz_id, course_id,
         folder = f_name.user.get_full_name().replace(" ", "_")
         sub_folder = f_name.assignmentQuestion.summary.replace(" ", "_")
         folder_name = os.sep.join((folder, sub_folder, os.path.basename(
-                        f_name.assignmentFile.name))
-                        )
+            f_name.assignmentFile.name))
+        )
         zip_file.write(
             f_name.assignmentFile.path, folder_name
         )
@@ -2156,8 +2175,8 @@ def download_assignment_file(request, quiz_id, course_id,
     zipfile_name.seek(0)
     response = HttpResponse(content_type='application/zip')
     response['Content-Disposition'] = 'attachment; filename={0}.zip'.format(
-                                            file_name.replace(" ", "_")
-                                            )
+        file_name.replace(" ", "_")
+    )
     response.write(zipfile_name.read())
     return response
 
@@ -2257,8 +2276,8 @@ def _get_csv_values(row, fields):
     roll_no, institute, department = "", "", ""
     remove = "false"
     email, first_name, last_name = map(str.strip, [row['email'],
-                                       row['firstname'],
-                                       row['lastname']])
+                                                   row['firstname'],
+                                                   row['lastname']])
     password = email
     username = email
     if 'password' in fields and row['password']:
@@ -2365,58 +2384,86 @@ def download_yaml_template(request):
 @email_verified
 def edit_lesson(request, lesson_id=None, course_id=None):
     user = request.user
-    if not is_moderator(user):
-        raise Http404('You are not allowed to view this page!')
+    permission = None
+    course = None
+
     if lesson_id:
         lesson = Lesson.objects.get(id=lesson_id)
-        if not lesson.creator == user and not course_id:
-            raise Http404('This Lesson does not belong to you')
-    else:
-        lesson = None
+
     if course_id:
-        course = get_object_or_404(Course, id=course_id)
-        if not course.is_creator(user) and not course.is_teacher(user):
-            raise Http404('This Lesson does not belong to you')
+        course = Course.objects.get(id=course_id)
         redirect_url = "/exam/manage/courses/"
     else:
         redirect_url = "/exam/manage/courses/all_lessons/"
-    context = {}
-    if request.method == "POST":
-        if "Save" in request.POST:
-            lesson_form = LessonForm(request.POST, request.FILES,
-                                     instance=lesson)
-            lesson_file_form = LessonFileForm(request.POST, request.FILES)
-            lessonfiles = request.FILES.getlist('Lesson_files')
-            clear = request.POST.get("video_file-clear")
-            video_file = request.FILES.get("video_file")
-            if (clear or video_file) and lesson:
-                # Remove previous video file if new file is uploaded or
-                # if clear is selected
-                lesson.remove_file()
-            if lesson_form.is_valid():
-                if lesson is None:
-                    lesson_form.instance.creator = user
-                lesson = lesson_form.save()
-                lesson.html_data = get_html_text(lesson.description)
-                lesson.save()
-                if lessonfiles:
-                    for les_file in lessonfiles:
-                        LessonFile.objects.get_or_create(
-                            lesson=lesson, file=les_file
-                        )
-                return my_redirect(redirect_url)
-            else:
-                context['lesson_form'] = lesson_form
-                context['error'] = lesson_form["video_file"].errors
-                context['lesson_file_form'] = lesson_file_form
 
-        if 'Delete' in request.POST:
-            remove_files_id = request.POST.getlist('delete_files')
-            if remove_files_id:
-                files = LessonFile.objects.filter(id__in=remove_files_id)
-                for file in files:
-                    file.remove()
-            return my_redirect(redirect_url)
+    # if not is_moderator(user):
+    #     raise Http404('You are not allowed to view this page!')
+    # if lesson_id:
+    #     lesson = Lesson.objects.get(id=lesson_id)
+    #     if not lesson.creator == user and not course_id:
+    #         raise Http404('This Lesson does not belong to you')
+    # else:
+    #     lesson = None
+    # if course_id:
+    #     course = get_object_or_404(Course, id=course_id)
+    #     if not course.is_creator(user) and not course.is_teacher(user):
+    #         raise Http404('This Lesson does not belong to you')
+    #     redirect_url = "/exam/manage/courses/"
+    # else:
+    #     redirect_url = "/exam/manage/courses/all_lessons/"
+
+    context = {}
+
+    if lesson and course:
+        if lesson.creator != user:
+
+            permission = check_permission(course, lesson, user)
+
+            if permission:
+                context["perm_type"] = permission.perm_type
+            else:
+                raise Http404("Insufficient permissions")
+
+    if request.method == "POST":
+        if lesson is None or lesson.creator == user or \
+                permission.perm_type == "write":
+            if "Save" in request.POST:
+                lesson_form = LessonForm(request.POST, request.FILES,
+                                         instance=lesson)
+                lesson_file_form = LessonFileForm(request.POST, request.FILES)
+                lessonfiles = request.FILES.getlist('Lesson_files')
+                clear = request.POST.get("video_file-clear")
+                video_file = request.FILES.get("video_file")
+                if (clear or video_file) and lesson:
+                    # Remove previous video file if new file is uploaded or
+                    # if clear is selected
+                    lesson.remove_file()
+                if lesson_form.is_valid():
+                    if lesson is None:
+                        lesson_form.instance.creator = user
+                    lesson = lesson_form.save()
+                    lesson.html_data = get_html_text(lesson.description)
+                    lesson.save()
+                    if lessonfiles:
+                        for les_file in lessonfiles:
+                            LessonFile.objects.get_or_create(
+                                lesson=lesson, file=les_file
+                            )
+                    return my_redirect(redirect_url)
+                else:
+                    context['lesson_form'] = lesson_form
+                    context['error'] = lesson_form["video_file"].errors
+                    context['lesson_file_form'] = lesson_file_form
+
+            if 'Delete' in request.POST:
+                remove_files_id = request.POST.getlist('delete_files')
+                if remove_files_id:
+                    files = LessonFile.objects.filter(id__in=remove_files_id)
+                    for file in files:
+                        file.remove()
+                return my_redirect(redirect_url)
+        else:
+            raise Http404("You don't have write access")
 
     lesson_files = LessonFile.objects.filter(lesson=lesson)
     lesson_files_form = LessonFileForm()
@@ -2425,6 +2472,8 @@ def edit_lesson(request, lesson_id=None, course_id=None):
     context['lesson_file_form'] = lesson_files_form
     context['lesson_files'] = lesson_files
     context['course_id'] = course_id
+    if lesson:
+        context['lesson_creator'] = lesson.creator
     return my_render_to_response(request, 'yaksh/add_lesson.html', context)
 
 
@@ -2817,7 +2866,7 @@ def course_modules(request, course_id, msg=None):
     context['modules'] = [
         (module, module.get_module_complete_percent(course, user))
         for module in learning_modules
-        ]
+    ]
     if course_status.exists():
         course_status = course_status.first()
         if not course_status.grade:
@@ -2898,7 +2947,7 @@ def get_user_data(request, course_id, student_id):
             """\
             You are neither course creator nor course teacher for {0}
             """.format(course.name)
-            )
+        )
         data['msg'] = msg
         data['status'] = False
     else:
@@ -2908,14 +2957,14 @@ def get_user_data(request, course_id, student_id):
         module_percent = [
             (module, module.get_module_complete_percent(course, student))
             for module in modules
-            ]
+        ]
         data['modules'] = module_percent
         _update_course_percent(course, student)
         data['course_percentage'] = course.get_completion_percent(student)
         data['student'] = student
     template_path = os.path.join(
         os.path.dirname(__file__), "templates", "yaksh", "user_status.html"
-        )
+    )
     with open(template_path) as f:
         template_data = f.read()
         template = Template(template_data)
@@ -2949,7 +2998,7 @@ def download_course(request, course_id):
     zip_file.seek(0)
     response = HttpResponse(content_type='application/zip')
     response['Content-Disposition'] = 'attachment; filename={0}.zip'.format(
-                                            course_name
-                                            )
+        course_name
+    )
     response.write(zip_file.read())
     return response
